@@ -1,0 +1,24 @@
+﻿{
+  "schemaVersion": 1,
+  "id": "default",
+  "name": "Fixture",
+  "createdAt": "2026-03-04T00:00:00.000Z",
+  "updatedAt": "2026-03-04T00:00:00.000Z",
+  "graph": {
+    "nodes": [
+      {"id": "n1", "label": "Tom", "group": "Leadership", "subgroup": "Core", "tags": ["alpha"], "attrs": {}},
+      {"id": "n2", "label": "Ana", "group": "Leadership", "subgroup": "Core", "tags": ["beta"], "attrs": {}}
+    ],
+    "edges": [
+      {"id": "row:2", "source": "n1", "target": "n2", "kind": "relates_to", "directed": false, "weight": 1, "attrs": {}}
+    ]
+  },
+  "positions": {},
+  "uiState": {
+    "groupingMode": "group",
+    "collapsed": {"groups": [], "subgroups": []},
+    "layout": "fcose",
+    "filters": {"groups": [], "subgroups": [], "types": [], "tags": [], "search": ""},
+    "filterMode": "dim"
+  }
+}

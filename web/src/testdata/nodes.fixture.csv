@@ -1,0 +1,6 @@
+﻿id,label,type,group,subgroup,tags,status
+n1,Tom,person,Leadership,Core,alpha;beta,
+n2,Ana,person,Leadership,Core,beta,
+n3,Data Team,team,Delivery,Platform,analytics,
+n4,Origin,cluster,Delivery,Platform,sim,
+n5,Future Role,person,Delivery,Platform,sim|future,future

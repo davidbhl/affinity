@@ -1,0 +1,5 @@
+﻿source,target,kind,directed,weight
+n1,n2,relates_to,false,1
+n2,n3,relates_to,1,1
+n3,n4,supports,false,2
+n5,n4,relates_to,true,1

@@ -1,13 +1,18 @@
-# affinity
+﻿# affinity
 
-Repository initialized with Git.
+Local-first stakeholder mapping workspace.
 
-## Getting Started
+## Projects
+- `web/`: React + Cytoscape app implementing the v0 single-project plan.
+- `templates/`: extracted CSV templates from the stakeholder SVG.
+- `tools/extract_stakeholder_templates.ps1`: SVG -> CSV extraction script.
 
-1. Add your project files.
-2. Review and update `.gitignore` for your stack.
-3. Create your first commit:
-   ```bash
-   git add .
-   git commit -m "Initial commit"
-   ```
+## Web app
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+See `web/README.md` for details.
