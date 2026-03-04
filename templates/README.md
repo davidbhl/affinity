@@ -38,6 +38,10 @@ High endpoint-fit edges (visual QA candidates):
 - Craig <-> Origin (max endpoint-fit error: 54.1)
 - Leadership & Direction <-> Tom (max endpoint-fit error: 24.76)
 
+Expected outlier checks:
+- Craig <-> Origin (confirmed, max endpoint-fit error: 54.1)
+- Leadership & Direction <-> Tom (confirmed, max endpoint-fit error: 24.76)
+
 Known caveats:
 - Endpoint mapping uses nearest node boundary distance and can produce outliers for long or crossing curves.
 - Keep IDs human-readable (no slug conversion) to match source labels exactly.

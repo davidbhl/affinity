@@ -1,7 +1,11 @@
 param(
     [string]$SvgPath = "C:\Users\david.brownstein\Downloads\Stakeholder Mapping.svg",
     [string]$OutputDir = (Join-Path $PSScriptRoot "..\templates"),
-    [double]$HighErrorThreshold = 35.0
+    [double]$HighErrorThreshold = 35.0,
+    [string[]]$ExpectedOutlierEdges = @(
+        "Craig|Origin",
+        "Leadership & Direction|Tom"
+    )
 )
 
 Set-StrictMode -Version Latest
@@ -43,7 +47,6 @@ function Clean-Label {
 
     $decoded = [System.Net.WebUtility]::HtmlDecode($Value)
     $decoded = $decoded -replace [string][char]0x00C2, ""
-    $decoded = $decoded -replace "Ã‚", ""
     $decoded = $decoded -replace [string][char]0x00A0, " "
     $decoded = $decoded -replace "\s+", " "
     return $decoded.Trim()
@@ -209,6 +212,30 @@ foreach ($group in $connectorGroups) {
     }
 }
 
+$expectedOutlierPairs = New-Object System.Collections.Generic.List[object]
+$expectedOutlierKeySet = New-Object "System.Collections.Generic.HashSet[string]"
+foreach ($pair in $ExpectedOutlierEdges) {
+    $parts = $pair -split "\|", 2
+    if ($parts.Count -ne 2 -or [string]::IsNullOrWhiteSpace($parts[0]) -or [string]::IsNullOrWhiteSpace($parts[1])) {
+        throw "Invalid ExpectedOutlierEdges item '$pair'. Use 'Node A|Node B'."
+    }
+    $a = $parts[0].Trim()
+    $b = $parts[1].Trim()
+    if ([string]::CompareOrdinal($a, $b) -gt 0) {
+        $tmp = $a
+        $a = $b
+        $b = $tmp
+    }
+    $pairKey = "$a$([char]31)$b"
+    if ($expectedOutlierKeySet.Add($pairKey)) {
+        $expectedOutlierPairs.Add([pscustomobject]@{
+                source = $a
+                target = $b
+                key    = $pairKey
+            })
+    }
+}
+
 $nodeIdSet = New-Object "System.Collections.Generic.HashSet[string]"
 foreach ($node in $nodes) {
     [void]$nodeIdSet.Add([string]$node.id)
@@ -236,6 +263,14 @@ if (@($edges | Where-Object {
 }
 if (@($edges | Where-Object { $_.source -eq $_.target }).Count -gt 0) {
     throw "Validation failed: self-loop edge(s) detected."
+}
+if (@($expectedOutlierPairs | Where-Object { -not $edgeKeySet.Contains($_.key) }).Count -gt 0) {
+    $missingPairs = @(
+        $expectedOutlierPairs |
+        Where-Object { -not $edgeKeySet.Contains($_.key) } |
+        ForEach-Object { "$($_.source) <-> $($_.target)" }
+    ) -join ", "
+    throw "Validation failed: expected outlier edge(s) not found: $missingPairs"
 }
 
 $outputPath = [System.IO.Path]::GetFullPath($OutputDir)
@@ -268,6 +303,12 @@ $edgeErrorStats = @(
     Sort-Object max_error -Descending
 )
 
+$edgeErrorByKey = @{}
+foreach ($edgeStat in $edgeErrorStats) {
+    $key = "$($edgeStat.source)$([char]31)$($edgeStat.target)"
+    $edgeErrorByKey[$key] = $edgeStat
+}
+
 $thresholdFlags = @($edgeErrorStats | Where-Object { $_.max_error -ge $HighErrorThreshold })
 $topOutliers = @($edgeErrorStats | Where-Object { $_.max_error -gt 1.0 } | Select-Object -First 5)
 if ($topOutliers.Count -eq 0) {
@@ -285,6 +326,21 @@ $flaggedLines = if ($flaggedEdges.Count -gt 0) {
     ($flaggedEdges | ForEach-Object { "- $($_.source) <-> $($_.target) (max endpoint-fit error: $($_.max_error))" }) -join [Environment]::NewLine
 } else {
     "- None"
+}
+$expectedOutlierLines = if ($expectedOutlierPairs.Count -gt 0) {
+    (
+        $expectedOutlierPairs |
+        ForEach-Object {
+            $stat = $edgeErrorByKey[$_.key]
+            if ($null -ne $stat) {
+                "- $($_.source) <-> $($_.target) (confirmed, max endpoint-fit error: $($stat.max_error))"
+            } else {
+                "- $($_.source) <-> $($_.target) (missing)"
+            }
+        }
+    ) -join [Environment]::NewLine
+} else {
+    "- None configured"
 }
 
 $readmeContent = @"
@@ -327,6 +383,9 @@ Validation checks:
 High endpoint-fit edges (visual QA candidates):
 $flaggedLines
 
+Expected outlier checks:
+$expectedOutlierLines
+
 Known caveats:
 - Endpoint mapping uses nearest node boundary distance and can produce outliers for long or crossing curves.
 - Keep IDs human-readable (no slug conversion) to match source labels exactly.
@@ -338,3 +397,4 @@ Write-Host "Generated: $nodesCsvPath"
 Write-Host "Generated: $edgesCsvPath"
 Write-Host "Generated: $readmePath"
 Write-Host "Validated counts: nodes=$($nodes.Count), connectors=$($connectorGroups.Count), edges=$($edges.Count)"
+Write-Host "Validated expected outlier edges: $($expectedOutlierPairs.Count)"
